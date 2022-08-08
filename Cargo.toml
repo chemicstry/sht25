@@ -12,7 +12,7 @@ cortex-m = "0.7.3"
 cortex-m-rt = "0.7.0"
 embedded-hal = "0.2"
 
-stm32f4xx-hal = { version = "0.13", features = ["stm32f429"] }
+stm32f4xx-hal = { version = "0.13", features = ["stm32f429", "defmt"] }
 
 defmt = "0.3"
 defmt-rtt = "0.3"
