@@ -1,3 +1,8 @@
+//! Async Rust driver for SHT25 temperature/humidity sensor based on [embedded-hal-async](https://crates.io/crates/embedded-hal-async)
+//!
+//! # Examples
+//! 
+//! See [examples/simple.rs](examples/simple.rs)
 #![no_std]
 
 use embedded_hal_async::i2c::Error as _;

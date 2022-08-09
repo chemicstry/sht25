@@ -1,9 +1,16 @@
 [package]
 name = "sht25"
 version = "0.1.0"
+authors = ["Jurgis Balciunas <chemicstry@gmail.com>"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Async Rust driver for SHT25 temperature/humidity sensor"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/chemicstry/sht25"
+homepage = "https://github.com/chemicstry/sht25"
+documentation = "https://docs.rs/sht25"
+keywords = ["thread", "wasm", "parallel", "concurrency"]
+categories = ["embedded"]
+readme = "README.md"
 
 [dependencies]
 embedded-hal-async = "=0.1.0-alpha.1"
