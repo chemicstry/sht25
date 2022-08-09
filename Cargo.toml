@@ -1,6 +1,6 @@
 [package]
 name = "sht25"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 authors = ["Jurgis Balciunas <chemicstry@gmail.com>"]
 edition = "2021"
 description = "Async Rust driver for SHT25 temperature/humidity sensor"
@@ -14,7 +14,6 @@ readme = "README.md"
 
 [dependencies]
 embedded-hal-async = "=0.1.0-alpha.1"
-defmt = "0.3"
 
 [dev-dependencies]
 embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", features = ["nightly"]}
