@@ -9,14 +9,14 @@ use embassy_executor::time::{Delay, Duration, Timer};
 use embassy_stm32::i2c::I2c;
 use embassy_stm32::time::khz;
 use embassy_stm32::Peripherals;
-use sht25_rs::{Resolution, Sht25};
+use sht25::{Resolution, Sht25};
 use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner, p: Peripherals) -> ! {
     info!("Hello SHT25!");
 
-    let i2c = I2c::new(p.I2C2, p.PF1, p.PF0, khz(100));
+    let i2c = I2c::new(p.I2C2, p.PF1, p.PF0, khz(100), Default::default());
 
     // I2Cv1 in embassy does not support async yet, so use adapter
     let async_i2c = BlockingAsync::new(i2c);
