@@ -6,14 +6,35 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+embedded-hal-async = "=0.1.0-alpha.1"
+defmt = "0.3"
 
 [dev-dependencies]
-cortex-m = "0.7.3"
-cortex-m-rt = "0.7.0"
-embedded-hal = "0.2"
-
-stm32f4xx-hal = { version = "0.13", features = ["stm32f429", "defmt"] }
+embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", features = ["nightly"]}
+embassy-util = { git = "https://github.com/embassy-rs/embassy", features = ["defmt"] }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", features = ["defmt", "defmt-timestamp-uptime", "unstable-traits", "time-tick-32768hz"] }
+embassy-stm32 = { git = "https://github.com/embassy-rs/embassy", features = ["nightly", "unstable-traits", "defmt", "stm32f429zi", "unstable-pac", "memory-x", "time-driver-any", "exti"]  }
 
 defmt = "0.3"
 defmt-rtt = "0.3"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
+cortex-m-rt = "0.7.0"
+
+# cargo build/run
+[profile.dev]
+codegen-units = 1
+debug = 2
+opt-level = 3
+
+# cargo build/run --release
+[profile.release]
+codegen-units = 1
+debug = 2
+lto = 'fat'
+opt-level = 3
+
+[patch."https://github.com/embassy-rs/embassy"]
+embassy-embedded-hal = { path = "../embassy/embassy-embedded-hal" }
+embassy-util = { path = "../embassy/embassy-util" }
+embassy-executor = { path = "../embassy/embassy-executor" }
+embassy-stm32 = { path = "../embassy/embassy-stm32" }
