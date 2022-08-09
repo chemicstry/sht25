@@ -8,7 +8,7 @@ license = "Apache-2.0 OR MIT"
 repository = "https://github.com/chemicstry/sht25"
 homepage = "https://github.com/chemicstry/sht25"
 documentation = "https://docs.rs/sht25"
-keywords = ["embedded-hal-driver", "embedded-hal-async-driver", "sht25", "embedded", "no-std"]
+keywords = ["embedded-hal-driver", "sht25", "embedded", "no-std"]
 categories = ["embedded"]
 readme = "README.md"
 
