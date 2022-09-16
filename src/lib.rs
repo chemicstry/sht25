@@ -18,7 +18,7 @@ const CMD_WRITE_USER_REG: u8 = 0b1110_0110;
 const CMD_READ_USER_REG: u8 = 0b1110_0111;
 const CMD_SOFT_RESET: u8 = 0b1111_1110;
 
-const SOFT_RESET_TIME_MS: u32 = 15;
+pub const SOFT_RESET_TIME_MS: u32 = 15;
 
 #[derive(Debug)]
 pub enum Error<I2CError, DelayError> {
@@ -30,7 +30,7 @@ pub enum Error<I2CError, DelayError> {
     Crc,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Resolution {
     /// 12 bit relative humidity and 14 bit temperature resolution
     Rh12T14,
