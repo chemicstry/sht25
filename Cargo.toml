@@ -13,34 +13,15 @@ categories = ["embedded"]
 readme = "README.md"
 
 [dependencies]
-embedded-hal = "=1.0.0-alpha.8"
+embedded-hal = "^1.0.0-alpha.7"
 
 [dev-dependencies]
-embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "ec10460", features = [
-    "defmt",
-    "integrated-timers",
-] }
-embassy-stm32 = { git = "https://github.com/embassy-rs/embassy", rev = "ec10460", features = [
-    "nightly",
-    "unstable-traits",
-    "defmt",
-    "stm32f429zi",
-    "unstable-pac",
-    "memory-x",
-    "time-driver-any",
-    "exti",
-] }
-embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "ec10460", features = [
-    "defmt",
-    "defmt-timestamp-uptime",
-    "unstable-traits",
-] }
-
 defmt = "0.3"
 defmt-rtt = "0.3"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.0"
+stm32f4xx-hal = { version = "0.13.2", features = ["stm32f429"] }
 
 # cargo build/run
 [profile.dev]
