@@ -13,13 +13,31 @@ categories = ["embedded"]
 readme = "README.md"
 
 [dependencies]
-embedded-hal-async = "=0.1.0-alpha.1"
+embedded-hal = "=1.0.0-alpha.8"
 
 [dev-dependencies]
-embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", features = ["nightly"]}
-embassy-util = { git = "https://github.com/embassy-rs/embassy", features = ["defmt"] }
-embassy-executor = { git = "https://github.com/embassy-rs/embassy", features = ["defmt", "defmt-timestamp-uptime", "unstable-traits", "time-tick-32768hz"] }
-embassy-stm32 = { git = "https://github.com/embassy-rs/embassy", features = ["nightly", "unstable-traits", "defmt", "stm32f429zi", "unstable-pac", "memory-x", "time-driver-any", "exti"]  }
+embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", features = [
+    "nightly",
+] }
+embassy-util = { git = "https://github.com/embassy-rs/embassy", features = [
+    "defmt",
+] }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", features = [
+    "defmt",
+    "defmt-timestamp-uptime",
+    "unstable-traits",
+    "time-tick-32768hz",
+] }
+embassy-stm32 = { git = "https://github.com/embassy-rs/embassy", features = [
+    "nightly",
+    "unstable-traits",
+    "defmt",
+    "stm32f429zi",
+    "unstable-pac",
+    "memory-x",
+    "time-driver-any",
+    "exti",
+] }
 
 defmt = "0.3"
 defmt-rtt = "0.3"
