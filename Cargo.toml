@@ -1,9 +1,9 @@
 [package]
 name = "sht25"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 authors = ["Jurgis Balciunas <chemicstry@gmail.com>"]
 edition = "2021"
-description = "Async Rust driver for SHT25 temperature/humidity sensor"
+description = "Rust driver for SHT25 temperature/humidity sensor"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/chemicstry/sht25"
 homepage = "https://github.com/chemicstry/sht25"
@@ -35,9 +35,3 @@ codegen-units = 1
 debug = 2
 lto = 'fat'
 opt-level = 3
-
-# [patch."https://github.com/embassy-rs/embassy"]
-# embassy-embedded-hal = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }
-# embassy-util = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }
-# embassy-executor = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }
-# embassy-stm32 = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }
