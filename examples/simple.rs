@@ -1,52 +1,70 @@
-#![no_std]
 #![no_main]
-#![feature(type_alias_impl_trait)]
+#![no_std]
 
-use defmt::{info, Debug2Format, Format};
-use embassy_embedded_hal::adapter::BlockingAsync;
-use embassy_executor::executor::Spawner;
-use embassy_executor::time::{Delay, Duration, Timer};
-use embassy_stm32::i2c::{I2c, Config};
-use embassy_stm32::time::khz;
-use embassy_stm32::Peripherals;
+use cortex_m_rt::entry;
+use defmt::*;
 use sht25::{Resolution, Sht25};
+use stm32f4xx_hal::pac::Peripherals;
+use stm32f4xx_hal::prelude::*;
 use {defmt_rtt as _, panic_probe as _};
 
-#[embassy_executor::main]
-async fn main(_spawner: Spawner, p: Peripherals) -> ! {
-    info!("Hello SHT25!");
+#[entry]
+fn main() -> ! {
+    info!("Hello world!");
 
-    let mut config = Config::default();
-    config.sda_pullup = true;
-    config.scl_pullup = true;
-    let i2c = I2c::new(p.I2C2, p.PF1, p.PF0, khz(100), config);
+    let dp = Peripherals::take().unwrap();
+    let cp = cortex_m::Peripherals::take().unwrap();
 
-    // I2Cv1 in embassy does not support async yet, so use adapter
-    let async_i2c = BlockingAsync::new(i2c);
+    // Set up the system clock. We want to run at 48MHz for this one.
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.sysclk(48.MHz()).freeze();
 
-    let mut sht25 = Sht25::new(async_i2c, Delay).await.unwrap();
+    let gpioa = dp.GPIOA.split();
+    let gpioc = dp.GPIOC.split();
+    let scl = gpioa.pa8.into_alternate().internal_pull_up(true).set_open_drain();
+    let sda = gpioc.pc9.into_alternate().internal_pull_up(true).set_open_drain();
+
+    let i2c = dp.I2C3.i2c((scl, sda), 400.kHz(), &clocks);
+
+    let delay = cp.SYST.delay(&clocks);
+
+    let mut sht25 = Sht25::new(i2c, delay).unwrap();
+
+    info!("Resetting SHT25");
+    sht25.reset_blocking().unwrap();
 
     info!(
         "Default resolution: {:?}",
-        Debug2Format(&sht25.get_resolution().await.unwrap())
+        Debug2Format(&sht25.get_resolution().unwrap())
     );
 
-    sht25.set_resolution(Resolution::Rh11T11).await.unwrap();
+    let res = Resolution::Rh11T11;
+    sht25.set_resolution(res).unwrap();
+    info!("New resolution: {:?}", Debug2Format(&sht25.get_resolution().unwrap()));
 
-    info!(
-        "New resolution: {:?}",
-        Debug2Format(&sht25.get_resolution().await.unwrap())
-    );
+    // Blocking temp measurement
+    let temp = sht25.read_temp_blocking().unwrap();
+    info!("Temp: {} C", HundredthsFormat(temp));
 
-    Timer::after(Duration::from_millis(100)).await;
+    // Blocking RH measurement
+    let rh = sht25.read_rh_blocking().unwrap();
+    info!("RH: {} %", HundredthsFormat(rh));
 
-    loop {
-        let temp = sht25.read_temp().await.unwrap();
-        info!("Temp: {} C", HundredthsFormat(temp));
-        let rh = sht25.read_rh().await.unwrap();
-        info!("RH: {} %", HundredthsFormat(rh));
-        Timer::after(Duration::from_secs(1)).await;
-    }
+    let mut delay = dp.TIM5.delay_ms(&clocks);
+
+    // Async temp measurement
+    sht25.trigger_temp_measurement().unwrap();
+    delay.delay_ms(res.temp_measure_time_ms()); // Can do other stuff here
+    let temp = sht25.read_temp().unwrap();
+    info!("Async temp: {} C", HundredthsFormat(temp));
+
+    // Async RH measurement
+    sht25.trigger_rh_measurement().unwrap();
+    delay.delay_ms(res.rh_measure_time_ms()); // Can do other stuff here
+    let rh = sht25.read_rh().unwrap();
+    info!("Async RH: {} %", HundredthsFormat(rh));
+
+    loop {}
 }
 
 struct HundredthsFormat(i32);

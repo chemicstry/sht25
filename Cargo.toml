@@ -1,9 +1,9 @@
 [package]
 name = "sht25"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 authors = ["Jurgis Balciunas <chemicstry@gmail.com>"]
 edition = "2021"
-description = "Async Rust driver for SHT25 temperature/humidity sensor"
+description = "Rust driver for SHT25 temperature/humidity sensor"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/chemicstry/sht25"
 homepage = "https://github.com/chemicstry/sht25"
@@ -13,18 +13,15 @@ categories = ["embedded"]
 readme = "README.md"
 
 [dependencies]
-embedded-hal-async = "=0.1.0-alpha.1"
+embedded-hal = "^1.0.0-alpha.7"
 
 [dev-dependencies]
-embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", features = ["nightly"]}
-embassy-util = { git = "https://github.com/embassy-rs/embassy", features = ["defmt"] }
-embassy-executor = { git = "https://github.com/embassy-rs/embassy", features = ["defmt", "defmt-timestamp-uptime", "unstable-traits", "time-tick-32768hz"] }
-embassy-stm32 = { git = "https://github.com/embassy-rs/embassy", features = ["nightly", "unstable-traits", "defmt", "stm32f429zi", "unstable-pac", "memory-x", "time-driver-any", "exti"]  }
-
 defmt = "0.3"
 defmt-rtt = "0.3"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
+cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.0"
+stm32f4xx-hal = { version = "0.13.2", features = ["stm32f429"] }
 
 # cargo build/run
 [profile.dev]
@@ -38,9 +35,3 @@ codegen-units = 1
 debug = 2
 lto = 'fat'
 opt-level = 3
-
-[patch."https://github.com/embassy-rs/embassy"]
-embassy-embedded-hal = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }
-embassy-util = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }
-embassy-executor = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }
-embassy-stm32 = { git = "https://github.com/chemicstry/embassy", branch = "i2c_pullup" }

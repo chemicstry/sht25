@@ -1,11 +1,11 @@
-//! Async Rust driver for SHT25 temperature/humidity sensor based on [embedded-hal-async](https://crates.io/crates/embedded-hal-async)
+//! Rust driver for SHT25 temperature/humidity sensor based on [embedded-hal](https://crates.io/crates/embedded-hal)
 //!
 //! # Examples
-//! 
+//!
 //! See [examples/simple.rs](examples/simple.rs)
 #![no_std]
 
-use embedded_hal_async::i2c::Error as _;
+use embedded_hal::i2c::Error as _;
 
 pub const SHT25_ADDRESS: u8 = 0x40;
 
@@ -18,7 +18,7 @@ const CMD_WRITE_USER_REG: u8 = 0b1110_0110;
 const CMD_READ_USER_REG: u8 = 0b1110_0111;
 const CMD_SOFT_RESET: u8 = 0b1111_1110;
 
-const SOFT_RESET_TIME_MS: u32 = 15;
+pub const SOFT_RESET_TIME_MS: u32 = 15;
 
 #[derive(Debug)]
 pub enum Error<I2CError, DelayError> {
@@ -30,7 +30,7 @@ pub enum Error<I2CError, DelayError> {
     Crc,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Resolution {
     /// 12 bit relative humidity and 14 bit temperature resolution
     Rh12T14,
@@ -102,50 +102,68 @@ pub struct Sht25<I2C, Delay> {
 
 impl<I2C, Delay> Sht25<I2C, Delay>
 where
-    I2C: embedded_hal_async::i2c::I2c,
-    Delay: embedded_hal_async::delay::DelayUs,
+    I2C: embedded_hal::i2c::blocking::I2c,
+    Delay: embedded_hal::delay::blocking::DelayUs,
 {
-    /// Constructs SHT25 sensor instance and performs soft-reset of the sensor
-    pub async fn new(i2c: I2C, delay: Delay) -> Result<Self, Error<I2C::Error, Delay::Error>> {
+    /// Constructs SHT25 sensor instance.
+    ///
+    /// It is recommended to perform a sensor reset before doing any measurements.
+    pub fn new(i2c: I2C, delay: Delay) -> Result<Self, Error<I2C::Error, Delay::Error>> {
         let mut sht = Self {
             i2c,
             delay,
             resolution: Resolution::Rh12T14,
         };
-        sht.reset().await?;
+
+        sht.resolution = sht.get_resolution()?;
+
         Ok(sht)
     }
 
-    /// Performs a sensor soft reset. Function asynchronously waits 15ms until
-    /// sensor reset is complete.
-    pub async fn reset(&mut self) -> Result<(), Error<I2C::Error, Delay::Error>> {
-        match self.i2c.write(SHT25_ADDRESS, &[CMD_SOFT_RESET]).await {
+    /// Performs a sensor soft reset without blocking delay.
+    ///
+    /// User must wait 15ms for sensor to reset before issuing any commands.
+    pub fn reset(&mut self) -> Result<(), Error<I2C::Error, Delay::Error>> {
+        match self.i2c.write(SHT25_ADDRESS, &[CMD_SOFT_RESET]) {
             Ok(_) => {}
             Err(e) => match e.kind() {
-                embedded_hal_async::i2c::ErrorKind::NoAcknowledge(_) => {
+                embedded_hal::i2c::ErrorKind::NoAcknowledge(_) => {
                     // For some reason first reset might fail with NACK so retry a second time
-                    self.i2c.write(SHT25_ADDRESS, &[CMD_SOFT_RESET]).await?
+                    self.i2c.write(SHT25_ADDRESS, &[CMD_SOFT_RESET])?
                 }
                 _ => return Err(e.into()),
             },
         };
 
-        self.delay_ms(SOFT_RESET_TIME_MS).await?;
         self.resolution = Resolution::Rh12T14;
+        Ok(())
+    }
+
+    /// Performs a sensor soft reset. Function blocks for 15ms until sensor reset is complete.
+    pub fn reset_blocking(&mut self) -> Result<(), Error<I2C::Error, Delay::Error>> {
+        self.reset()?;
+        self.delay_ms(SOFT_RESET_TIME_MS)?;
+        Ok(())
+    }
+
+    /// Starts temperature measurement.
+    ///
+    /// User must wait for [Resolution::temp_measure_time_ms()] before calling [Sht25::read_temp()]. Alternatively,
+    /// [Sht25::read_temp_blocking()] can be used, which combines [Sht25::trigger_temp_measurement()] and
+    /// [Sht25::read_temp()] with a blocking delay.
+    pub fn trigger_temp_measurement(&mut self) -> Result<(), Error<I2C::Error, Delay::Error>> {
+        self.i2c.write(SHT25_ADDRESS, &[CMD_TRIGGER_T_MEASUREMENT_NOHOLD])?;
         Ok(())
     }
 
     /// Returns temperature in hundredths of a degree C. For example, to get whole degrees, divide by 100.
     ///
-    /// This function works by triggering measurement, asynchronously waiting for the maximum measurement time acording to current resolution and then finally reading the measurement.
-    pub async fn read_temp(&mut self) -> Result<i32, Error<I2C::Error, Delay::Error>> {
-        self.i2c
-            .write(SHT25_ADDRESS, &[CMD_TRIGGER_T_MEASUREMENT_NOHOLD])
-            .await?;
-        self.delay_ms(self.resolution.temp_measure_time_ms()).await?;
-
+    /// User must call [Sht25::trigger_temp_measurement()] and wait for [Resolution::temp_measure_time_ms()] before
+    /// calling [Sht25::read_temp()]. Alternatively, [Sht25::read_temp_blocking()] can be used, which combines
+    /// [Sht25::trigger_temp_measurement()] and [Sht25::read_temp()] with a blocking delay.
+    pub fn read_temp(&mut self) -> Result<i32, Error<I2C::Error, Delay::Error>> {
         let mut buf = [0u8; 3];
-        self.i2c.read(SHT25_ADDRESS, &mut buf).await?;
+        self.i2c.read(SHT25_ADDRESS, &mut buf)?;
 
         let res = Measurement::from_buf(buf).ok_or(Error::Crc)?;
         assert!(res.is_rh == false);
@@ -153,17 +171,34 @@ where
         Ok(Self::convert_temp(res.sample))
     }
 
+    /// Returns temperature in hundredths of a degree C. For example, to get whole degrees, divide by 100.
+    ///
+    /// This function triggers measurement, blocks for the measurement duration and then reads the measured temperature.
+    /// For non-blocking version use [Sht25::trigger_temp_measurement()] and [Sht25::read_temp()].
+    pub fn read_temp_blocking(&mut self) -> Result<i32, Error<I2C::Error, Delay::Error>> {
+        self.trigger_temp_measurement()?;
+        self.delay_ms(self.resolution.temp_measure_time_ms())?;
+        self.read_temp()
+    }
+
+    /// Starts relative humidity measurement.
+    ///
+    /// User must wait for [Resolution::rh_measure_time_ms] before calling [Sht25::read_rh()]. Alternatively,
+    /// [Sht25::read_rh_blocking()] can be used, which combines [Sht25::trigger_rh_measurement()] and [Sht25::read_rh()]
+    /// with a blocking delay.
+    pub fn trigger_rh_measurement(&mut self) -> Result<(), Error<I2C::Error, Delay::Error>> {
+        self.i2c.write(SHT25_ADDRESS, &[CMD_TRIGGER_RH_MEASUREMENT_NOHOLD])?;
+        Ok(())
+    }
+
     /// Returns relative humidity in hundredths of a percent. For example, to get whole percent, divide by 100.
     ///
-    /// This function works by triggering measurement, asynchronously waiting for the maximum measurement time acording to current resolution and then finally reading the measurement.
-    pub async fn read_rh(&mut self) -> Result<i32, Error<I2C::Error, Delay::Error>> {
-        self.i2c
-            .write(SHT25_ADDRESS, &[CMD_TRIGGER_RH_MEASUREMENT_NOHOLD])
-            .await?;
-        self.delay_ms(self.resolution.rh_measure_time_ms()).await?;
-
+    /// User must call [Sht25::trigger_rh_measurement()] and wait for [Resolution::rh_measure_time_ms] before calling
+    /// [Sht25::read_rh()]. Alternatively, [Sht25::read_rh_blocking()] can be used, which combines
+    /// [Sht25::trigger_rh_measurement()] and [Sht25::read_rh()] with a blocking delay.
+    pub fn read_rh(&mut self) -> Result<i32, Error<I2C::Error, Delay::Error>> {
         let mut buf = [0u8; 3];
-        self.i2c.read(SHT25_ADDRESS, &mut buf).await?;
+        self.i2c.read(SHT25_ADDRESS, &mut buf)?;
 
         let res = Measurement::from_buf(buf).ok_or(Error::Crc)?;
         assert!(res.is_rh == true);
@@ -171,33 +206,43 @@ where
         Ok(Self::convert_rh(res.sample))
     }
 
+    /// Returns relative humidity in hundredths of a percent. For example, to get whole percent, divide by 100.
+    ///
+    /// This function triggers measurement, blocks for the measurement duration and then reads the measured relative
+    /// humidity. For non-blocking version use [Sht25::trigger_rh_measurement()] and [Sht25::read_rh()].
+    pub fn read_rh_blocking(&mut self) -> Result<i32, Error<I2C::Error, Delay::Error>> {
+        self.trigger_rh_measurement()?;
+        self.delay_ms(self.resolution.rh_measure_time_ms())?;
+        self.read_rh()
+    }
+
     /// Returns current sensor resolution
-    pub async fn get_resolution(&mut self) -> Result<Resolution, Error<I2C::Error, Delay::Error>> {
-        let reg = self.read_user_reg().await?;
+    pub fn get_resolution(&mut self) -> Result<Resolution, Error<I2C::Error, Delay::Error>> {
+        let reg = self.read_user_reg()?;
         Ok(Resolution::from_user_reg(reg))
     }
 
     /// Sets sensor resolution
-    pub async fn set_resolution(&mut self, res: Resolution) -> Result<(), Error<I2C::Error, Delay::Error>> {
-        let mut reg = self.read_user_reg().await?;
+    pub fn set_resolution(&mut self, res: Resolution) -> Result<(), Error<I2C::Error, Delay::Error>> {
+        let mut reg = self.read_user_reg()?;
         res.to_user_reg(&mut reg);
 
-        self.write_user_reg(reg).await?;
+        self.write_user_reg(reg)?;
         self.resolution = res;
         Ok(())
     }
 
-    async fn read_user_reg(&mut self) -> Result<u8, Error<I2C::Error, Delay::Error>> {
-        self.i2c.write(SHT25_ADDRESS, &[CMD_READ_USER_REG]).await?;
+    fn read_user_reg(&mut self) -> Result<u8, Error<I2C::Error, Delay::Error>> {
+        self.i2c.write(SHT25_ADDRESS, &[CMD_READ_USER_REG])?;
 
         let mut val = [0; 1];
-        self.i2c.read(SHT25_ADDRESS, &mut val).await?;
+        self.i2c.read(SHT25_ADDRESS, &mut val)?;
 
         Ok(val[0])
     }
 
-    async fn write_user_reg(&mut self, val: u8) -> Result<(), Error<I2C::Error, Delay::Error>> {
-        self.i2c.write(SHT25_ADDRESS, &[CMD_WRITE_USER_REG, val]).await.ok();
+    fn write_user_reg(&mut self, val: u8) -> Result<(), Error<I2C::Error, Delay::Error>> {
+        self.i2c.write(SHT25_ADDRESS, &[CMD_WRITE_USER_REG, val]).ok();
         Ok(())
     }
 
@@ -211,8 +256,8 @@ where
         -600 + 12500 * (sample as i32) / 0xFFFF
     }
 
-    async fn delay_ms(&mut self, ms: u32) -> Result<(), Error<I2C::Error, Delay::Error>> {
-        self.delay.delay_ms(ms).await.map_err(|e| Error::Delay(e))
+    fn delay_ms(&mut self, ms: u32) -> Result<(), Error<I2C::Error, Delay::Error>> {
+        self.delay.delay_ms(ms).map_err(|e| Error::Delay(e))
     }
 }
 
