@@ -1,6 +1,6 @@
 # sht25
 
-Async Rust driver for SHT25 temperature/humidity sensor based on [embedded-hal-async](https://crates.io/crates/embedded-hal-async)
+Rust driver for SHT25 temperature/humidity sensor based on [embedded-hal](https://crates.io/crates/embedded-hal)
 
 ## Examples
 
