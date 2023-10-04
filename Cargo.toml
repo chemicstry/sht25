@@ -13,7 +13,7 @@ categories = ["embedded"]
 readme = "README.md"
 
 [dependencies]
-embedded-hal = "^1.0.0-alpha.7"
+embedded-hal = "^1.0.0-rc.1"
 
 [dev-dependencies]
 defmt = "0.3"
