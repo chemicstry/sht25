@@ -13,7 +13,7 @@ categories = ["embedded"]
 readme = "README.md"
 
 [dependencies]
-embedded-hal = "^1.0.0-rc.1"
+embedded-hal = "^1.0.0-alpha.11"
 
 [dev-dependencies]
 defmt = "0.3"
@@ -21,7 +21,7 @@ defmt-rtt = "0.3"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.0"
-stm32f4xx-hal = { version = "0.13.2", features = ["stm32f429"] }
+stm32f4xx-hal = { version = "0.17.1", features = ["stm32f429"] }
 
 # cargo build/run
 [profile.dev]
