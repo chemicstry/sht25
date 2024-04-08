@@ -101,7 +101,7 @@ pub struct Sht25<I2C, Delay> {
 impl<I2C, Delay> Sht25<I2C, Delay>
 where
     I2C: embedded_hal::i2c::I2c,
-    Delay: embedded_hal::delay::DelayUs,
+    Delay: embedded_hal::delay::DelayNs,
 {
     /// Constructs SHT25 sensor instance.
     ///
